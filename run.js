@@ -8,8 +8,7 @@
 "use strict";
 
 const http = require("http");
-
 const {process_request} = require("./process-request.js");
 
 const server = http.createServer(process_request);
-server.listen(8080, ()=>console.log("Listening"));
+server.listen(process.env.PORT || 8080);

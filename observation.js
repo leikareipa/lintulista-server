@@ -44,23 +44,55 @@ function factory_Observation()
                                               [2, year]]);
         },
 
-        // Decodes a string produced by this.encode_to_string().
+        // Decodes a string (or a concatenation of strings) produced by this.encode_to_string()
+        // into an observation object.
         decode_from_string: function(string)
         {
-            const [speciesIdx, day, month, year] = UintStringer.string2uints(string, [2, 1, 1, 2]);
+            const substrings = split_observation_string(string);
+            const observations = [];
 
-            assert((speciesIdx >= 0) &&
-                (speciesIdx < knownBirds.length),
-                "Invalid species identifier.");
+            for (const substring of substrings)
+            {
+                const [speciesIdx, day, month, year] = UintStringer.string2uints(substring, [2, 1, 1, 2]);
 
-            return {
-                species: knownBirds[speciesIdx].species,
-                day,
-                month,
-                year: year,
+                assert((speciesIdx >= 0) &&
+                       (speciesIdx < knownBirds.length),
+                       `Invalid species index ${speciesIdx}.`);
+
+                observations.push({
+                    species: knownBirds[speciesIdx].species,
+                    day,
+                    month,
+                    year: year,
+                });
             }
+
+            return observations;
         },
     };
 
     return publicInterface;
+
+    function split_observation_string(string)
+    {
+        const substringLength = 6;
+
+        assert(((string.length % substringLength) == 0),
+               `Invalid observation string ${string}.`);
+
+        const substrings = [];
+            
+        while (string.length)
+        {
+            const newSubstring = string.substring(0, substringLength);
+
+            assert((newSubstring.length == substringLength),
+                   `Invalid observation substring ${newSubstring}.`);
+
+            substrings.push(newSubstring);
+            string = string.slice(substringLength);
+        }
+
+        return substrings;
+    }
 }

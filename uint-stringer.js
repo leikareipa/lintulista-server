@@ -69,7 +69,7 @@ function factory_UintStringer()
         string2uints: function(string = "", lengths = [])
         {
             assert((string.length == lengths.reduce((totalLen, len)=>totalLen+len)),
-                   "Malformed string.");
+                   `Malformed string ${string}.`);
 
             const ints = [];
             string = string.split("");
