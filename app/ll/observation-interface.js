@@ -22,7 +22,7 @@ function generate_observation_interface()
 
     const publicInterface = {
         // Converts into a string an observation of the given species on the given date.
-        encode_to_string: function(species, day, month, year)
+        encode_to_string: function({species, day, month, year})
         {
             // Basic sanity checks. Note that this doesn't guarantee e.g. that
             // the given month actually has the given number of days.
