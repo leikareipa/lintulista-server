@@ -7,9 +7,9 @@
 
 "use strict";
 
-require("http");
 const url = require("url");
 const {LL_Database} = require("./database-interface.js");
+const {LL_Respond} = require("./response.js");
 
 module.exports = {
     LL_ProcessRequest: process_request,
@@ -31,22 +31,14 @@ async function process_request(request, response)
 
 async function process_options(request, response)
 {
-    response.writeHead(200, {
-        "content-type": "text/plain",
-        "Access-Control-Allow-Origin": "http://localhost:8002",
-        "Access-Control-Allow-Methods": "GET, PUT, DELETE, OPTIONS",
-    });
+    LL_Respond(200, response).allowed_methods("GET, PUT, DELETE, OPTIONS");
 
-    response.end();
+    return;
 }
 
 async function process_default(request, response)
 {
-    response.writeHead(405, {
-        "content-type": "text/plain",
-    });
-
-    response.end("Unknown method.\n");
+    LL_Respond(405, response).message("Unknown method.");
 
     return;
 }
@@ -67,14 +59,8 @@ async function process_put(request, response)
 {
     const listKey = (url.parse(request.url, true).query.list || null);
 
-    if (!listKey)
-    {
-        response.writeHead(400, {
-            "content-type": "text/plain",
-        });
-
-        response.end("The request is missing the required parameter 'list'.");
-
+    if (!listKey) {
+        LL_Respond(400, response).message("The request is missing the required parameter 'list'.");
         return;
     }
 
@@ -92,27 +78,11 @@ async function process_put(request, response)
             throw new Error("Database error.");
         }
 
-        response.writeHead(200, {
-            "Content-Type": "application/json",
-            "Access-Control-Allow-Origin": "http://localhost:8002",
-        });
-
-        response.end(JSON.stringify({
-            valid: true,
-        }));
+        LL_Respond(200, response).as_is();
     }
     catch (error)
     {
-        response.writeHead(400, {
-            "content-type": "application/json",
-            "Access-Control-Allow-Origin": "http://localhost:8002",
-        });
-
-        response.end(JSON.stringify({
-            valid: false,
-            message: "The observation could not be added.",
-        }));
-
+        LL_Respond(500, response).message("The observation could not be added.");
         console.log(error);
     }
 
@@ -124,14 +94,8 @@ async function process_delete(request, response)
 {
     const listKey = (url.parse(request.url, true).query.list || null);
 
-    if (!listKey)
-    {
-        response.writeHead(400, {
-            "content-type": "text/plain",
-        });
-
-        response.end("The request is missing the required parameter 'list'.");
-
+    if (!listKey) {
+        LL_Respond(400, response).message("The request is missing the required parameter 'list'.");
         return;
     }
 
@@ -149,27 +113,11 @@ async function process_delete(request, response)
             throw new Error("Database error.");
         }
 
-        response.writeHead(200, {
-            "Content-Type": "application/json",
-            "Access-Control-Allow-Origin": "http://localhost:8002",
-        });
-
-        response.end(JSON.stringify({
-            valid: true,
-        }));
+        LL_Respond(200, response).as_is();
     }
     catch (error)
     {
-        response.writeHead(400, {
-            "content-type": "application/json",
-            "Access-Control-Allow-Origin": "http://localhost:8002",
-        });
-
-        response.end(JSON.stringify({
-            valid: false,
-            message: "The observation could not be removed.",
-        }));
-
+        LL_Respond(500, response).message("The observation could not be added");
         console.log(error);
     }
     
@@ -181,41 +129,20 @@ async function process_get(request, response)
 {
     const listKey = (url.parse(request.url, true).query.list || null);
 
-    if (!listKey)
-    {
-        response.writeHead(400, {
-            "content-type": "text/plain",
-        });
-
-        response.end("The request is missing the required parameter 'list'.");
-
+    if (!listKey) {
+        LL_Respond(400, response).message("The request is missing the required parameter 'list'.");
         return;
     }
 
     const observations = await LL_Database.get_observations(listKey);
 
-    if (observations !== false)
-    {
-        response.writeHead(200, {
-            "Content-Type": "application/json",
-            "Access-Control-Allow-Origin": "http://localhost:8002",
-        });
-
-        response.end(JSON.stringify({
-            valid: true,
+    if (observations !== false) {
+        LL_Respond(200, response).json({
             data: observations,
-        }));
-    }
-    else
-    {
-        response.writeHead(500, {
-            "content-type": "text/plain",
-            "Access-Control-Allow-Origin": "http://localhost:8002",
         });
-
-        response.end("Database error.");
-
-        return;
+    }
+    else {
+        LL_Respond(500, response).message("Can't fetch observations: database error.");
     }
 
     return;

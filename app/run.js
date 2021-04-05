@@ -7,6 +7,7 @@
 
 "use strict";
 
+require("dotenv").config();
 const http = require("http");
 const {LL_ProcessRequest} = require("./ll/process-request.js");
 
