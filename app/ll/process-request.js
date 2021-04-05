@@ -7,27 +7,28 @@
 
 "use strict";
 
-module.exports = {
-    process_request,
-};
-
 require("http");
 const url = require("url");
-const {Database} = require("./database.js");
+const {LL_Database} = require("./database-interface.js");
 
-function process_request(request, response)
+module.exports = {
+    LL_ProcessRequest: process_request,
+};
+
+async function process_request(request, response)
 {
-    (({
+    const requestProcessorFunctions = {
         "GET": process_get,
         "PUT": process_put,
-        "POST": process_post,
         "DELETE": process_delete,
-    })[request.method] || process_default)(request, response);
+    };
 
-    return;
+    const process_fn = (requestProcessorFunctions[request.method] || process_default);
+    
+    return await process_fn(request, response);
 }
 
-function process_default(request, response)
+async function process_default(request, response)
 {
     response.writeHead(405, {
         "content-type": "text/plain",
@@ -39,17 +40,7 @@ function process_default(request, response)
 }
 
 // Inserts a new observation into the given list.
-function process_put(request, response)
-{
-    response.writeHead(501, {
-        "content-type": "text/plain",
-    });
-
-    response.end();
-}
-
-// Creates a new list.
-function process_post(request, response)
+async function process_put(request, response)
 {
     response.writeHead(501, {
         "content-type": "text/plain",
@@ -59,7 +50,7 @@ function process_post(request, response)
 }
 
 // Deletes an observation from the given list.
-function process_delete(request, response)
+async function process_delete(request, response)
 {
     response.writeHead(501, {
         "content-type": "text/plain",
@@ -69,7 +60,7 @@ function process_delete(request, response)
 }
 
 // Returns the observations associated with the given list.
-function process_get(request, response)
+async function process_get(request, response)
 {
     const listKey = (url.parse(request.url, true).query.list || null);
 
@@ -85,12 +76,16 @@ function process_get(request, response)
     }
 
     response.writeHead(200, {
-        "content-type": "application/json",
+        "Content-Type": "application/json",
+        "Access-Control-Allow-Origin": "http://localhost:8002",
     });
 
-    const observations = Database.get_observations(listKey);
+    const observations = await LL_Database.get_observations(listKey);
 
-    response.end(JSON.stringify(observations));
+    response.end(JSON.stringify({
+        valid: true,
+        data: observations,
+    }));
 
     return;
 }

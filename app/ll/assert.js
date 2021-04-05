@@ -8,7 +8,7 @@
 "use strict";
 
 module.exports = {
-    assert,
+    LL_Assert: assert,
 };
 
 function assert(condition, failMessage)

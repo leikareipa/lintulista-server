@@ -7,14 +7,14 @@
 
 "use strict";
 
+const {LL_Assert} = require("./assert.js");
+
 module.exports = {
-    UintStringer: factory_UintStringer(),
+    LL_UintStringer: generate_uint_stringer_interface(),
 };
 
-const {assert} = require("./assert.js");
-
 // Provides an encoding of unsigned integers into/from ASCII strings; e.g. 161 -> "*I" -> 161.
-function factory_UintStringer()
+function generate_uint_stringer_interface()
 {
     // The range of possible ASCII symbols with which values are to be represented.
     const numBits = 6;
@@ -26,16 +26,16 @@ function factory_UintStringer()
         // given length.
         uint2string: function(int = 0, length = 0)
         {
-            assert((int >= 0) &&
-                   (length > 0),
-                   "Malformed arguments.");
+            LL_Assert((int >= 0) &&
+                      (length > 0),
+                      "Malformed arguments.");
 
             const string = new Array(length).fill(String.fromCharCode(firstCharCode));
 
             while (int)
             {
                 --length;
-                assert((length >= 0), "Overflowing value-to-string conversion.");
+                LL_Assert((length >= 0), "Overflowing value-to-string conversion.");
         
                 const char = String.fromCharCode(firstCharCode + (int & ((1 << numBits) - 1)));
                 string[length] = char;
@@ -68,8 +68,8 @@ function factory_UintStringer()
         // uints2string().
         string2uints: function(string = "", lengths = [])
         {
-            assert((string.length == lengths.reduce((totalLen, len)=>totalLen+len)),
-                   `Malformed string ${string}.`);
+            LL_Assert((string.length == lengths.reduce((totalLen, len)=>totalLen+len)),
+                      `Malformed string ${string}.`);
 
             const ints = [];
             string = string.split("");
