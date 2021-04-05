@@ -8,8 +8,9 @@
 "use strict";
 
 const url = require("url");
-const {LL_Database} = require("./database-interface.js");
+const {LL_Assert} = require("./assert.js");
 const {LL_Respond} = require("./response.js");
+const {LL_Database} = require("./database.js");
 
 module.exports = {
     LL_ProcessRequest: process_request,
@@ -17,26 +18,43 @@ module.exports = {
 
 async function process_request(request, response)
 {
-    const requestProcessorFunctions = {
+    const listKey = (url.parse(request.url, true).query.list || null);
+
+    if (!listKey) {
+        LL_Respond(400, response).message("Requests must provide the 'list' URL parameter.");
+        return;
+    }
+
+    const process = (({
         "GET": process_get,
         "PUT": process_put,
         "DELETE": process_delete,
         "OPTIONS": process_options,
-    };
+    })[request.method] || process_default); 
 
-    const process_fn = (requestProcessorFunctions[request.method] || process_default);
+    try
+    {
+        const requestBody = await get_request_json_body(request);
+        const database = LL_Database(listKey);
+        await process({response, database, requestBody});
+    }
+    catch (error)
+    {
+        LL_Respond(500, response).message("The request could not be processed.");
+        console.error(error);
+    }
     
-    return await process_fn(request, response);
+    return;
 }
 
-async function process_options(request, response)
+async function process_options({response})
 {
     LL_Respond(200, response).allowed_methods("GET, PUT, DELETE, OPTIONS");
 
     return;
 }
 
-async function process_default(request, response)
+async function process_default({response})
 {
     LL_Respond(405, response).message("Unknown method.");
 
@@ -55,95 +73,61 @@ async function process_default(request, response)
 //
 // where 'species' identifies the bird species observed, and 'day'/'month'/'year'
 // give the observation's timestamp ('day' is in the range 1-31, 'month' in 1-12).
-async function process_put(request, response)
+async function process_put({response, database, requestBody})
 {
-    const listKey = (url.parse(request.url, true).query.list || null);
+    LL_Assert(((typeof requestBody == "object") &&
+               requestBody.hasOwnProperty("species") &&
+               requestBody.hasOwnProperty("day") &&
+               requestBody.hasOwnProperty("month") &&
+               requestBody.hasOwnProperty("year")),
+              "Malformed request body.");
 
-    if (!listKey) {
-        LL_Respond(400, response).message("The request is missing the required parameter 'list'.");
-        return;
-    }
+    database.add_observation("TODO",
+                             requestBody.species,
+                             requestBody.day,
+                             requestBody.month,
+                             requestBody.year);
 
-    try
-    {
-        const body = await get_request_json_body(request);
-
-        if (!LL_Database.add_observation(listKey,
-                                         "TODO",
-                                         body.species,
-                                         body.day,
-                                         body.month,
-                                         body.year))
-        {
-            throw new Error("Database error.");
-        }
-
-        LL_Respond(200, response).as_is();
-    }
-    catch (error)
-    {
-        LL_Respond(500, response).message("The observation could not be added.");
-        console.log(error);
-    }
+    LL_Respond(200, response).as_is();
 
     return;
 }
 
-// Deletes an observation from the given list.
-async function process_delete(request, response)
+// Deletes an observation from the given list. Expects the request body to be a JSON
+// object of the following form,
+//
+// {
+//     species: "...",
+// }
+//
+// where 'species' identifies the bird species observed. A list may containg at most
+// one observation per species, so no further information is needed to identify the
+// observation to be deleted.
+async function process_delete({response, database, requestBody})
 {
-    const listKey = (url.parse(request.url, true).query.list || null);
+    LL_Assert(((typeof requestBody == "object") &&
+               requestBody.hasOwnProperty("species")),
+              "Malformed request body.");
 
-    if (!listKey) {
-        LL_Respond(400, response).message("The request is missing the required parameter 'list'.");
-        return;
-    }
+    database.delete_observation("TODO",
+                                requestBody.species,
+                                requestBody.day,
+                                requestBody.month,
+                                requestBody.year);
 
-    try
-    {
-        const body = await get_request_json_body(request);
+    LL_Respond(200, response).as_is();
 
-        if (!LL_Database.delete_observation(listKey,
-                                            "TODO",
-                                            body.species,
-                                            body.day,
-                                            body.month,
-                                            body.year))
-        {
-            throw new Error("Database error.");
-        }
-
-        LL_Respond(200, response).as_is();
-    }
-    catch (error)
-    {
-        LL_Respond(500, response).message("The observation could not be added");
-        console.log(error);
-    }
-    
     return;
 }
 
 // Returns the observations associated with the given list.
-async function process_get(request, response)
+async function process_get({response, database})
 {
-    const listKey = (url.parse(request.url, true).query.list || null);
+    const observations = await database.get_observations();
 
-    if (!listKey) {
-        LL_Respond(400, response).message("The request is missing the required parameter 'list'.");
-        return;
-    }
-
-    const observations = await LL_Database.get_observations(listKey);
-
-    if (observations !== false) {
-        LL_Respond(200, response).json({
-            data: observations,
-        });
-    }
-    else {
-        LL_Respond(500, response).message("Can't fetch observations: database error.");
-    }
+    LL_Respond(200, response).json({
+        data: observations,
+    });
 
     return;
 }
@@ -175,6 +159,12 @@ async function get_request_json_body(request)
 
         function finish()
         {
+            if (!requestBodyBuffer.length)
+            {
+                resolve({});
+                return;
+            }
+
             try
             {
                 const bodyJson = JSON.parse(requestBodyBuffer);

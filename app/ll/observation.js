@@ -11,11 +11,11 @@ const {LL_UintStringer} = require("./uint-stringer.js");
 const {LL_Assert} = require("./assert.js");
 
 module.exports = {
-    LL_Observation: generate_observation_interface(),
+    LL_Observation: create_observation_interface(),
 };
 
-// Provides functionality for dealing with observations.
-function generate_observation_interface()
+// Provides functionality for dealing with Lintulista's observations.
+function create_observation_interface()
 {
     const fileSystem = require("fs");
     const knownBirds = JSON.parse(fileSystem.readFileSync("./ll/metadata/known-birds.json", "utf-8")).birds;

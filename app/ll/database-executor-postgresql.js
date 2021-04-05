@@ -7,21 +7,31 @@
 
 "use strict";
 
-require("dotenv").config();
 const {Client: PSQLClient} = require("pg");
+const {LL_Assert} = require("./assert.js");
 
 module.exports = {
-    LL_DatabaseExecutor: generate_postgresql_executor(),
+    instance: create_postgresql_executor,
 };
 
-// Executes database queries in PostgreSQL.
-function generate_postgresql_executor()
+// Creates a Lintulista database executor interface that provides facilities for
+// executing database queries in PostgreSQL.
+//
+// This interface is intended to be used by Lintulista's database interface
+// and not directly by external code.
+function create_postgresql_executor()
 {
+    LL_Assert((("LL_PSQL_USER" in process.env) &&
+               ("LL_PSQL_HOST" in process.env) &&
+               ("LL_PSQL_DATABASE" in process.env) &&
+               ("LL_PSQL_PASSWORD" in process.env)),
+              "Missing one or more required environment variable(s).");
+
     const client = new PSQLClient({
-        user: process.env.PSQL_USER,
-        host: process.env.PSQL_HOST,
-        database: process.env.PSQL_DATABASE,
-        password: process.env.PSQL_PASSWORD,
+        user: process.env.LL_PSQL_USER,
+        host: process.env.LL_PSQL_HOST,
+        database: process.env.LL_PSQL_DATABASE,
+        password: process.env.LL_PSQL_PASSWORD,
         port: 5432,
     });
     
@@ -39,19 +49,10 @@ function generate_postgresql_executor()
             const values = [listKey];
             const response = await client.query(text, values);
 
-            if (response.rows.length != 1){
-                throw new RangeError("Invalid list key.");
-            }
-
-            if (!response.rows[0].hasOwnProperty("observations")) {
-                throw new Error("Malformed database response; missing expected property 'observations'.");
-            }
-
-            const observationsString = response.rows[0].observations;
-
-            if (typeof observationsString !== "string") {
-                throw new TypeError("Malformed database response; expected 'observations' to be a string.");
-            }
+            LL_Assert(((response.rows.length == 1) &&
+                       response.rows[0].hasOwnProperty("observations") &&
+                       (typeof response.rows[0].observations == "string")),
+                      "Malformed database response.");
 
             return response.rows[0].observations;
         },
