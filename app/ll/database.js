@@ -113,24 +113,54 @@ function database_list_access(listKey = "")
     }
     
     // Returns true if the given token is valid; false otherwise. Throws on failure.
-    // Has the side effect of resetting the token if has timed out (in which case
-    // false is also returned).
-    async function validate_token(token = "")
+    // If the token is valid, this function has the side effect of resetting the db-side
+    // token to null if it has timed out (in which case false is also returned).
+    async function validate_token(proposedToken = "")
     {
-        // Validate timeout.
+        // Validate token surface features.
         {
-            const tokenTimeoutEpoch = await dbExecutor.get_column_value("token_valid_until", listKey);
-            const epochNow = (Date.now() / 1000);
+            const listToken = await dbExecutor.get_column_value("token", listKey);
 
-            if (epochNow > tokenTimeoutEpoch)
-            {
-                await dbExecutor.set_column_value("token", null, listKey);
-                await dbExecutor.set_column_value("token_valid_until", null, listKey);
+            if (!has_valid_token_surface_features(proposedToken) ||
+                !has_valid_token_surface_features(listToken) ||
+                (proposedToken !== listToken)) {
                 return false;
+            }
+
+            function has_valid_token_surface_features(tokenCandidate)
+            {
+                return ((typeof tokenCandidate === "string") &&
+                        (tokenCandidate.length === 30));
             }
         }
 
-        const validToken = await dbExecutor.get_column_value("token", listKey);
-        return (token === validToken);
+        // Validate token timeout. At this point, we've found the proposed token to
+        // be valid; now we just need to be sure that it hasn't timed out.
+        {
+            const listTokenValidUntil = Number(await dbExecutor.get_column_value("token_valid_until", listKey));
+            const epochNow = Math.ceil(Date.now() / 1000.0);
+
+            if (!has_valid_timestamp_surface_features(epochNow) ||
+                !has_valid_timestamp_surface_features(listTokenValidUntil)) {
+                return false;
+            }
+
+            // If the token has timed out.
+            if (epochNow > listTokenValidUntil)
+            {
+                await dbExecutor.set_column_value("token", "", listKey);
+                await dbExecutor.set_column_value("token_valid_until", 0, listKey);
+                return false;
+            }
+
+            function has_valid_timestamp_surface_features(timestampCandidate)
+            {
+                /// TODO: Verify that the timestamp is an epoch in seconds.
+
+                return (typeof timestampCandidate === "number");
+            }
+        }
+
+        return true;
     }
 }
