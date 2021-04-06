@@ -69,11 +69,11 @@ async function process_put({response, database, requestBody})
                requestBody.hasOwnProperty("year")),
               "Malformed request body.");
 
-    database.add_observation("TODO",
-                             requestBody.species,
-                             requestBody.day,
-                             requestBody.month,
-                             requestBody.year);
+    await database.add_observation("TODO",
+                                   requestBody.species,
+                                   requestBody.day,
+                                   requestBody.month,
+                                   requestBody.year);
 
     LL_Respond(200, response).as_is();
 
@@ -96,11 +96,11 @@ async function process_delete({response, database, requestBody})
                requestBody.hasOwnProperty("species")),
               "Malformed request body.");
 
-    database.delete_observation("TODO",
-                                requestBody.species,
-                                requestBody.day,
-                                requestBody.month,
-                                requestBody.year);
+    await database.delete_observation("TODO",
+                                      requestBody.species,
+                                      requestBody.day,
+                                      requestBody.month,
+                                      requestBody.year);
 
     LL_Respond(200, response).as_is();
 
