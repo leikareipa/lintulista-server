@@ -12,7 +12,7 @@ const {LL_Assert} = require("./assert.js");
 const dbExecutor = require("./database-executor-postgresql.js").instance();
 
 module.exports = {
-    LL_Database: connect_to_list_in_database,
+    LL_Database: database_list_access,
 };
 
 // Provides an interface for interacting with Lintulista's database. Database
@@ -36,16 +36,16 @@ module.exports = {
 //
 //       const observations = database.get_observations();
 // 
-function connect_to_list_in_database(listKey = "")
+function database_list_access(listKey = "")
 {
     LL_Assert(is_list_key_valid(listKey), "Invalid list key.");
 
     const publicInterface = {
         // Fetches and returns all of the observations in the given list. Returns an
-        // array containing the observations; or false on error.
+        // array containing the observations- Throws on failure.
         get_observations: async function()
         {
-            const observationsString = await dbExecutor.get_observations_string(listKey);
+            const observationsString = await dbExecutor.get_column_value("observations", listKey);
             const observations = LL_Observation.decode_from_string(observationsString);
             return observations;
         },
@@ -57,35 +57,41 @@ function connect_to_list_in_database(listKey = "")
                                         month = 0,
                                         year = 0)
         {
-            LL_Assert(is_edit_token_valid(editToken, listKey),
-                      "Attempting to use an invalid token to add an observation.");
+            LL_Assert(await is_edit_token_valid(editToken, listKey),
+                      "Attempted to use an invalid token to add an observation.");
 
             LL_Assert(!(await this.is_species_on_list(species)),
-                      "Attempting to add a duplicate observation.");
+                      "Attempted to add a duplicate observation.");
 
-            const observationString = LL_Observation.encode_to_string({species, day, month, year});
-            await dbExecutor.append_to_observations(observationString, listKey);
+            const newObservationString = LL_Observation.encode_to_string({species, day, month, year});
+            const observationsString = await dbExecutor.get_column_value("observations", listKey);
+            const concatenated = (observationsString + newObservationString);
+
+            await dbExecutor.set_column_value("observations", concatenated, listKey);
 
             return;
         },
 
-        // Removes the observation of the given species from the list. Note that a given list
-        // can contain at most one observation per species, so the observation date isn't
-        // needed.
+        // Removes the first observation of the given species from the list. Note that a
+        // list can contain at most one observation per species, so the observation date
+        // isn't needed. Throws on failure.
         delete_observation: async function(editToken = "",
                                            species = "")
         {
-            LL_Assert(is_edit_token_valid(editToken, listKey),
-                      "Attempting to use an invalid token to delete an observation.");
+            LL_Assert(await is_edit_token_valid(editToken, listKey),
+                      "Attempted to use an invalid token to delete an observation.");
 
             const observations = await this.get_observations(listKey);
             const targetObservation = observations.find(o=>o.species==species);
 
             LL_Assert((targetObservation !== undefined),
-                      "Attempting to use an invalid token to delete an observation.");
+                      "Attempted to use an invalid token to delete an observation.");
 
-            const observationString = LL_Observation.encode_to_string(targetObservation);
-            await dbExecutor.remove_from_observations(observationString, listKey);
+            const targetObservationString = LL_Observation.encode_to_string(targetObservation);
+            const observationsString = await dbExecutor.get_column_value("observations", listKey);
+            const removed = observationsString.replace(targetObservationString, "");
+
+            await dbExecutor.set_column_value("observations", removed, listKey);
 
             return;
         },
@@ -106,7 +112,8 @@ function connect_to_list_in_database(listKey = "")
         return true;
     }
     
-    function is_edit_token_valid(editToken = "", listKey = "")
+    // Throws on failure.
+    async function is_edit_token_valid(editToken = "", listKey = "")
     {
         /// TODO.
 

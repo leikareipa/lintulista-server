@@ -38,58 +38,32 @@ function create_postgresql_executor()
     client.connect();
 
     const publicInterface = {
-        // Returns the full observations string (e.g. "/bG.GM/?))GM(65/GM.WE*GM.c*2GM")
-        // associated with the given list.
+        // Returns the value of the given column in the given list.
         //
         // Throws on error; caller should catch.
         // Caller is responsible for argument validation.
-        get_observations_string: async function(listKey = "")
+        get_column_value: async function(columnName = "", listKey = "")
         {
-            const text = "SELECT observations FROM lintulista WHERE key = $1";
+            const text = `SELECT ${columnName} FROM lintulista WHERE key = $1`;
             const values = [listKey];
             const response = await client.query(text, values);
 
             LL_Assert(((response.rows.length == 1) &&
-                       response.rows[0].hasOwnProperty("observations") &&
-                       (typeof response.rows[0].observations == "string")),
+                       response.rows[0].hasOwnProperty(columnName)),
                       "Malformed database response.");
 
-            return response.rows[0].observations;
+            return response.rows[0][columnName];
         },
 
-        // Appends the given observations string to the given list's observations.
-        //
         // Throws on error; caller should catch.
         // Caller is responsible for argument validation.
-        append_to_observations: async function(observationString = "", listKey = "")
+        set_column_value: async function(columnName = "", newValue, listKey = "")
         {
-            /// TODO: User built-in PostgreSQL syntax to append the string.
-            const oldObservationsString = await this.get_observations_string(listKey);
-            const newObservationsString = (oldObservationsString + observationString);
-
-            const text = "UPDATE lintulista SET observations = $2 WHERE key = $1";
-            const values = [listKey, newObservationsString];
+            const text = `UPDATE lintulista SET ${columnName} = $2 WHERE key = $1`;
+            const values = [listKey, newValue];
             await client.query(text, values);
-
-            return true;
-        },
-
-        // Removes the first instance of the given observation from the given list's
-        // observations.
-        //
-        // Throws on error; caller should catch.
-        // Caller is responsible for argument validation.
-        remove_from_observations: async function(observationString = "", listKey = "")
-        {
-            /// TODO: User built-in PostgreSQL syntax to remove the substring.
-            const oldObservationsString = await this.get_observations_string(listKey);
-            const newObservationsString = oldObservationsString.replace(observationString, "");
-
-            const text = "UPDATE lintulista SET observations = $2 WHERE key = $1";
-            const values = [listKey, newObservationsString];
-            await client.query(text, values);
-
-            return true;
+            
+            return;
         },
     };
 
