@@ -34,7 +34,7 @@ module.exports = {
 //
 //   2. Get all observations in the list.
 //
-//       const observations = database.get_observations();
+//       const observations = await database.get_observations();
 // 
 function database_list_access(listKey = "")
 {
