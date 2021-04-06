@@ -51,13 +51,13 @@ function database_list_access(listKey = "")
         },
 
         // Adds the given observation into the given list. Throws on failure.
-        add_observation: async function(editToken = "",
+        add_observation: async function(token = "",
                                         species = "",
                                         day = 0,
                                         month = 0,
                                         year = 0)
         {
-            LL_Assert(await is_edit_token_valid(editToken, listKey),
+            LL_Assert(await validate_token(token),
                       "Attempted to use an invalid token to add an observation.");
 
             LL_Assert(!(await this.is_species_on_list(species)),
@@ -75,13 +75,13 @@ function database_list_access(listKey = "")
         // Removes the first observation of the given species from the list. Note that a
         // list can contain at most one observation per species, so the observation date
         // isn't needed. Throws on failure.
-        delete_observation: async function(editToken = "",
+        delete_observation: async function(token = "",
                                            species = "")
         {
-            LL_Assert(await is_edit_token_valid(editToken, listKey),
+            LL_Assert(await validate_token(token),
                       "Attempted to use an invalid token to delete an observation.");
 
-            const observations = await this.get_observations(listKey);
+            const observations = await this.get_observations();
             const targetObservation = observations.find(o=>o.species==species);
 
             LL_Assert((targetObservation !== undefined),
@@ -105,18 +105,32 @@ function database_list_access(listKey = "")
 
     return publicInterface;
 
-    function is_list_key_valid(editToken = "", listKey = "")
+    function is_list_key_valid()
     {
         /// TODO.
 
         return true;
     }
     
-    // Throws on failure.
-    async function is_edit_token_valid(editToken = "", listKey = "")
+    // Returns true if the given token is valid; false otherwise. Throws on failure.
+    // Has the side effect of resetting the token if has timed out (in which case
+    // false is also returned).
+    async function validate_token(token = "")
     {
-        /// TODO.
+        // Validate timeout.
+        {
+            const tokenTimeoutEpoch = await dbExecutor.get_column_value("token_valid_until", listKey);
+            const epochNow = (Date.now() / 1000);
 
-        return true;
+            if (epochNow > tokenTimeoutEpoch)
+            {
+                await dbExecutor.set_column_value("token", null, listKey);
+                await dbExecutor.set_column_value("token_valid_until", null, listKey);
+                return false;
+            }
+        }
+
+        const validToken = await dbExecutor.get_column_value("token", listKey);
+        return (token === validToken);
     }
 }

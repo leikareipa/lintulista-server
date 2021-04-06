@@ -52,24 +52,28 @@ async function process_options({response})
 // object of the following form,
 //
 // {
+//     token: "...",
 //     species: "...",
 //     day: x,
 //     month: y,
 //     year: z,
 // }
 //
-// where 'species' identifies the bird species observed, and 'day'/'month'/'year'
-// give the observation's timestamp ('day' is in the range 1-31, 'month' in 1-12).
+// where 'token' represents token authentication proving that the client has write
+// access to the list, 'species' identifies the bird species observed, and 'day'/
+// 'month'/'year' give the observation's timestamp ('day' is in the range 1-31,
+// 'month' in 1-12).
 async function process_put({response, database, requestBody})
 {
     LL_Assert(((typeof requestBody == "object") &&
+               requestBody.hasOwnProperty("token") &&
                requestBody.hasOwnProperty("species") &&
                requestBody.hasOwnProperty("day") &&
                requestBody.hasOwnProperty("month") &&
                requestBody.hasOwnProperty("year")),
               "Malformed request body.");
 
-    await database.add_observation("TODO",
+    await database.add_observation(requestBody.token,
                                    requestBody.species,
                                    requestBody.day,
                                    requestBody.month,
@@ -84,23 +88,23 @@ async function process_put({response, database, requestBody})
 // object of the following form,
 //
 // {
+//     token: "...",
 //     species: "...",
 // }
 //
-// where 'species' identifies the bird species observed. A list may containg at most
-// one observation per species, so no further information is needed to identify the
-// observation to be deleted.
+// where 'token' represents token authentication proving that the client has write
+// access to the list, 'species' identifies the bird species observed. A list may
+// contain at most one observation per species, so no further information is needed
+// to identify the observation to be deleted.
 async function process_delete({response, database, requestBody})
 {
     LL_Assert(((typeof requestBody == "object") &&
+               requestBody.hasOwnProperty("token") &&
                requestBody.hasOwnProperty("species")),
               "Malformed request body.");
 
-    await database.delete_observation("TODO",
-                                      requestBody.species,
-                                      requestBody.day,
-                                      requestBody.month,
-                                      requestBody.year);
+    await database.delete_observation(requestBody.token,
+                                      requestBody.species);
 
     LL_Respond(200, response).as_is();
 
