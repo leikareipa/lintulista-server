@@ -20,7 +20,7 @@ const tokenLength = 30;
 function generate_token()
 {
     const randomBytes = crypto.randomBytes(tokenLength);
-    const randomString = randomBytes.reduce((string, b)=>{
+    const randomToken = randomBytes.reduce((string, b)=>{
         const idx = (33 + (b % 90));
         return (string + String.fromCharCode(idx));
     }, "").replace(/[\\]/g, "_")
@@ -28,10 +28,10 @@ function generate_token()
           .replace(/[\"]/g, "y")
           .replace(/[\`]/g, "3");
 
-    LL_Assert((randomString.length >= tokenLength),
+    LL_Assert(is_token_well_formed(randomToken),
               "Generated an invalid token.");
 
-    return randomString;
+    return randomToken;
 }
 
 function is_token_well_formed(tokenCandidate = "")
