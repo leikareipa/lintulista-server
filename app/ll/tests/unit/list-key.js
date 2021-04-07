@@ -46,6 +46,7 @@ async function test_ListKey()
     LLTest_ExpectTrue(()=>LL_IsListKeyValid(Infinity) === false);
     LLTest_ExpectTrue(()=>LL_IsListKeyValid({}) === false);
     LLTest_ExpectTrue(()=>LL_IsListKeyValid([]) === false);
+    LLTest_ExpectTrue(()=>LL_IsListKeyValid() === false);
     LLTest_ExpectTrue(()=>LL_IsListKeyValid(function(){}) === false);
 
     // Reject keys with invalid characters.
