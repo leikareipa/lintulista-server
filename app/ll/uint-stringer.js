@@ -20,28 +20,36 @@ function generate_uint_stringer_interface()
     const numBits = 6;
     const firstCharCode = '('.charCodeAt(0);
     const lastCharCode = (firstCharCode + (1 << numBits) - 1);
+    const leftPadSymbol = "#";
+
+    LL_Assert((lastCharCode > firstCharCode), "Invalid last char code.");
+
+    LL_Assert((leftPadSymbol.charCodeAt(0) < firstCharCode),
+              "The empty symbol is in a reserved range.");
 
     const publicInterface = {
         // Returns a conversion of the given unsigned integer into a string of the
         // given length.
-        uint2string: function(int = 0, length = 0)
+        uint2string: function(uint = 0, length = 0)
         {
-            LL_Assert((int >= 0) &&
+            LL_Assert((Math.round(uint) === uint) &&
+                      (uint >= 0) &&
                       (length > 0),
                       "Malformed arguments.");
 
-            const string = new Array(length).fill(String.fromCharCode(firstCharCode));
+            const string = new Array(length).fill(leftPadSymbol);
 
-            while (int)
+            do
             {
                 --length;
                 LL_Assert((length >= 0), "Overflowing value-to-string conversion.");
         
-                const char = String.fromCharCode(firstCharCode + (int & ((1 << numBits) - 1)));
+                const char = String.fromCharCode(firstCharCode + (uint & ((1 << numBits) - 1)));
                 string[length] = char;
         
-                int >>= numBits;
+                uint >>= numBits;
             }
+            while (uint);
 
             return string.join("");
         },
@@ -69,7 +77,7 @@ function generate_uint_stringer_interface()
         string2uints: function(string = "", lengths = [])
         {
             LL_Assert((string.length == lengths.reduce((totalLen, len)=>totalLen+len)),
-                      `Malformed string ${string}.`);
+                      "Mismatched lengths array for string.");
 
             const ints = [];
             string = string.split("");
@@ -82,7 +90,13 @@ function generate_uint_stringer_interface()
 
                 for (let i = 0; i < length; i++)
                 {
-                    const value = (substring.pop().charCodeAt(0) - firstCharCode);
+                    const chr = substring.pop();
+
+                    if (chr === leftPadSymbol) {
+                        break;
+                    }
+
+                    const value = (chr.charCodeAt(0) - firstCharCode);
                     int |= (value << (i * numBits));
                 }
 
