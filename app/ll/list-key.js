@@ -11,11 +11,11 @@ module.exports = {
     LL_IsListKeyValid: is_list_key_valid,
 };
 
-const fixedKeyLength = 9;
+const keyLength = 9;
 
 function is_list_key_valid(listKeyCandidate = "")
 {
     return ((typeof listKeyCandidate === "string") &&
-            (listKeyCandidate.length === fixedKeyLength) &&
+            (listKeyCandidate.length === keyLength) &&
             (listKeyCandidate.match(/[^a-zA-Z]/) === null));
 }

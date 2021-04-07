@@ -15,6 +15,7 @@ async function run_unit_tests()
 {
     const tests = {
         "UintStringer": require("./unit/uint-stringer.js").test,
+        "ListKey": require("./unit/list-key.js").test,
     };
 
     let numTestsFailed = 0;
@@ -25,7 +26,7 @@ async function run_unit_tests()
     {
         try
         {
-            console.log(testName);
+            console.log("\t", testName);
             await tests[testName]();
         }
         catch (error)
