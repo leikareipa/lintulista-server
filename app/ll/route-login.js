@@ -66,7 +66,7 @@ async function process_post({response, database, requestBody})
     const loginInfo = await database.login(requestBody.username, requestBody.password);
 
     if (loginInfo === false) {
-        LL_Respond(401, response).message("Invalid login credentials.");
+        LL_Respond(401, response).message("Invalid credentials.");
     }
     else
     {
@@ -87,7 +87,13 @@ async function process_post({response, database, requestBody})
 // Logout.
 async function process_delete({response, database, requestBody})
 {
-    /// TODO.
+    LL_Assert(((typeof requestBody == "object") &&
+               requestBody.hasOwnProperty("token")),
+              "Malformed request body.");
+
+    await database.logout(requestBody.token);
+
+    LL_Respond(200, response).as_is();
 
     return;
 }

@@ -58,7 +58,18 @@ function database_list_access(listKey = "")
               "Invalid list key for database access.");
 
     const publicInterface = {
-        // Returns an object containing the login credentials on success; false otherwise.
+        // Logs the user out of the list. Throws on error.
+        logout: async function(token = "")
+        {
+            LL_Assert(await validate_token(token),
+                      "Attempted to use an invalid token to log out.");
+
+            await reset_list_token();
+
+            return;
+        },
+        
+        // Returns an object containing the login token on success; false otherwise.
         login: async function(username = "", plaintextPassword = "")
         {
             LL_Assert(is_valid_username_string(username) &&
@@ -162,6 +173,13 @@ function database_list_access(listKey = "")
     };
 
     return publicInterface;
+
+    async function reset_list_token()
+    {
+        await dbExecutor.set_column_value("token", "", listKey);
+        await dbExecutor.set_column_value("token_valid_until", 0, listKey);
+        return;
+    }
     
     // Returns true if the given token is valid; false otherwise. Throws on failure.
     // If the token is valid, this function has the side effect of resetting the db-side
@@ -195,8 +213,7 @@ function database_list_access(listKey = "")
             // If the token has timed out.
             if (LL_TimestampNow() > listTokenValidUntil)
             {
-                await dbExecutor.set_column_value("token", "", listKey);
-                await dbExecutor.set_column_value("token_valid_until", 0, listKey);
+                await reset_list_token();
                 return false;
             }
         }
