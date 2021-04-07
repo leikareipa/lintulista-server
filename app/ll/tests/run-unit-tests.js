@@ -16,39 +16,51 @@ async function run_unit_tests()
     const tests = {
         "UintStringer": require("./unit/uint-stringer.js").test,
         "ListKey": require("./unit/list-key.js").test,
+        "Observation": require("./unit/observation.js").test,
+        "Token": require("./unit/token.js").test,
     };
 
     let numTestsFailed = 0;
 
-    console.log("Running unit tests...");
+    console.log(`Running unit tests (${new Date().toISOString()})`);
 
     for (const testName of Object.keys(tests))
     {
+        let success = false;
+        let errorMessage = "";
+
         try
         {
-            console.log("\t", testName);
             await tests[testName]();
+            success = true;
         }
         catch (error)
         {
-            if (LLTest_IsOwnError(error))
-            {
+            success = false;
+
+            if (LLTest_IsOwnError(error)) {
                 numTestsFailed++;
-                console.error(`\tFAIL ${error.message}`);
+                errorMessage = error.message;
             }
-            else
-            {
+            else {
                 console.error("Runtime error. Canceling unit testing.");
                 throw error;
             }
         }
+
+        if (success) {
+            console.log(`\x1b[37m\x1b[42m PASS \x1b[0m ${testName}`);
+        }
+        else {
+            console.log(`\x1b[37m\x1b[41m FAIL \x1b[0m ${testName}: ${errorMessage}`);
+        }
     }
 
-    const resultString = "Result: " +
+    const resultString = "Finished: " +
                          ((numTestsFailed <= 0)
                           ? "All passed."
                           : `${numTestsFailed}/${Object.keys(tests).length} failed.`);
 
-    console.log(resultString);
+    console.log(resultString, "\n");
     return resultString;
 }
