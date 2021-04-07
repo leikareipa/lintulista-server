@@ -20,6 +20,7 @@ module.exports = {
 const routes = {
     "/": require("./route-root.js").route,
     "/login": require("./route-login.js").route,
+    "/test": require("./route-test.js").route,
 };
 
 async function process_request(request, response)
