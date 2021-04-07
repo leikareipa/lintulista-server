@@ -17,6 +17,7 @@ module.exports = {
 
 const requestProcessorFunctions = {
     "GET": process_get,
+    "POST": process_post,
     "DELETE": process_delete,
     "OPTIONS": process_options,
 };
@@ -29,6 +30,13 @@ async function route_login({listKey, requestMethod, requestBody, response})
     const database = LL_Database(listKey);
     const processor_fn = (requestProcessorFunctions[requestMethod] || process_default);
     await processor_fn({response, database, requestBody});
+
+    return;
+}
+
+async function process_default({response})
+{
+    LL_Respond(405, response).message("Unrecognized method.");
 
     return;
 }
@@ -47,16 +55,39 @@ async function process_options({response})
     return;
 }
 
+// Login.
 async function process_post({response, database, requestBody})
 {
-    /// TODO.
+    LL_Assert(((typeof requestBody == "object") &&
+               requestBody.hasOwnProperty("username") &&
+               requestBody.hasOwnProperty("password")),
+              "Malformed request body.");
+
+    const loginInfo = await database.login(requestBody.username, requestBody.password);
+
+    if (loginInfo === false) {
+        LL_Respond(401, response).message("Invalid login credentials.");
+    }
+    else
+    {
+        LL_Assert(((typeof loginInfo === "object") &&
+                   loginInfo.hasOwnProperty("token") &&
+                   loginInfo.hasOwnProperty("until")),
+                  "Malformed login.");
+
+        LL_Respond(200, response).json({
+            token: loginInfo.token,
+            until: loginInfo.until,
+        });
+    }
 
     return;
 }
 
+// Logout.
 async function process_delete({response, database, requestBody})
 {
     /// TODO.
-    
+
     return;
 }

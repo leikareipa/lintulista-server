@@ -7,12 +7,28 @@
 
 "use strict";
 
-const {LL_Observation} = require("./observation.js");
-const {LL_Assert} = require("./assert.js");
+const bcrypt = require("bcrypt");
 const dbExecutor = require("./database-executor-postgresql.js").instance();
+const {LL_Assert} = require("./assert.js");
+const {LL_Observation} = require("./observation.js");
+const {LL_TimestampNow,
+       LL_IsTimestampValid} = require("./timestamp.js");
+const {LL_GenerateToken,
+       LL_IsTokenWellFormed} = require("./token.js");
+const {LL_IsListKeyValid} = require("./list-key.js");
 
 module.exports = {
     LL_Database: database_list_access,
+};
+
+const dbConstants = {
+    minUsernameLength: 5,
+    maxUsernameLength: 30,
+    minPlaintextPasswordLength: 5,
+    maxPlaintextPasswordLength: 30,
+    minPasswordHashLength: 60,
+    maxPasswordHashLength: 255,
+    numHoursTokenValid: 6,
 };
 
 // Provides an interface for interacting with Lintulista's database. Database
@@ -38,11 +54,53 @@ module.exports = {
 // 
 function database_list_access(listKey = "")
 {
-    LL_Assert(is_list_key_valid(listKey), "Invalid list key.");
+    LL_Assert(LL_IsListKeyValid(listKey),
+              "Invalid list key for database access.");
 
     const publicInterface = {
+        // Returns an object containing the login credentials on success; false otherwise.
+        login: async function(username = "", plaintextPassword = "")
+        {
+            LL_Assert(is_valid_username_string(username) &&
+                      is_valid_plaintext_password_string(plaintextPassword),
+                      "Invalid login credentials.");
+
+            const listUsername = await dbExecutor.get_column_value("username", listKey);
+            const listPasswordHash = await dbExecutor.get_column_value("password_hash", listKey);
+            const isCorrectPassword = await bcrypt.compare(plaintextPassword, listPasswordHash);
+
+            if ((listUsername === username) &&
+                (isCorrectPassword === true))
+            {
+                const token = LL_GenerateToken();
+                const until = (LL_TimestampNow() + (dbConstants.numHoursTokenValid * 60 * 60));
+
+                await dbExecutor.set_column_value("token", token, listKey);
+                await dbExecutor.set_column_value("token_valid_until", until, listKey);
+                
+                return {token, until};
+            }
+            else {
+                return false;
+            }
+
+            function is_valid_username_string(proposedString)
+            {
+                return ((typeof proposedString === "string") &&
+                        (proposedString.length >= dbConstants.minUsernameLength) &&
+                        (proposedString.length <= dbConstants.maxUsernameLength));
+            }
+
+            function is_valid_plaintext_password_string(proposedString)
+            {
+                return ((typeof proposedString === "string") &&
+                        (proposedString.length >= dbConstants.minPlaintextPasswordLength) &&
+                        (proposedString.length <= dbConstants.maxPlaintextPasswordLength));
+            }
+        },
+
         // Fetches and returns all of the observations in the given list. Returns an
-        // array containing the observations- Throws on failure.
+        // array containing the observations. Throws on failure.
         get_observations: async function()
         {
             const observationsString = await dbExecutor.get_column_value("observations", listKey);
@@ -104,33 +162,25 @@ function database_list_access(listKey = "")
     };
 
     return publicInterface;
-
-    function is_list_key_valid()
-    {
-        /// TODO.
-
-        return true;
-    }
     
     // Returns true if the given token is valid; false otherwise. Throws on failure.
     // If the token is valid, this function has the side effect of resetting the db-side
     // token to null if it has timed out (in which case false is also returned).
     async function validate_token(proposedToken = "")
     {
-        // Validate token surface features.
+        // Verify that the token is valid for this list.
         {
             const listToken = await dbExecutor.get_column_value("token", listKey);
 
-            if (!has_valid_token_surface_features(proposedToken) ||
-                !has_valid_token_surface_features(listToken) ||
-                (proposedToken !== listToken)) {
+            if (!LL_IsTokenWellFormed(proposedToken) ||
+                !LL_IsTokenWellFormed(listToken))
+            {
                 return false;
             }
 
-            function has_valid_token_surface_features(tokenCandidate)
+            if (proposedToken !== listToken)
             {
-                return ((typeof tokenCandidate === "string") &&
-                        (tokenCandidate.length === 30));
+                return false;
             }
         }
 
@@ -138,26 +188,16 @@ function database_list_access(listKey = "")
         // be valid; now we just need to be sure that it hasn't timed out.
         {
             const listTokenValidUntil = Number(await dbExecutor.get_column_value("token_valid_until", listKey));
-            const epochNow = Math.ceil(Date.now() / 1000.0);
 
-            if (!has_valid_timestamp_surface_features(epochNow) ||
-                !has_valid_timestamp_surface_features(listTokenValidUntil)) {
-                return false;
-            }
+            LL_Assert(LL_IsTimestampValid(listTokenValidUntil),
+                      "Detected a malformed timestamp in the database.");
 
             // If the token has timed out.
-            if (epochNow > listTokenValidUntil)
+            if (LL_TimestampNow() > listTokenValidUntil)
             {
                 await dbExecutor.set_column_value("token", "", listKey);
                 await dbExecutor.set_column_value("token_valid_until", 0, listKey);
                 return false;
-            }
-
-            function has_valid_timestamp_surface_features(timestampCandidate)
-            {
-                /// TODO: Verify that the timestamp is an epoch in seconds.
-
-                return (typeof timestampCandidate === "number");
             }
         }
 
