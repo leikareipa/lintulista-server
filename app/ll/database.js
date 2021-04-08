@@ -121,10 +121,10 @@ function database_list_access(listKey = "")
 
         // Adds the given observation into the given list. Throws on failure.
         add_observation: async function(token = "",
-                                        species = "",
-                                        day = 0,
-                                        month = 0,
-                                        year = 0)
+                                        {species = "",
+                                         day = 0,
+                                         month = 0,
+                                         year = 0})
         {
             LL_Assert(await validate_token(token),
                       "Attempted to use an invalid token to add an observation.");

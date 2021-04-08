@@ -74,10 +74,10 @@ async function process_put({response, database, requestBody})
               "Malformed request body.");
 
     await database.add_observation(requestBody.token,
-                                   requestBody.species,
-                                   requestBody.day,
-                                   requestBody.month,
-                                   requestBody.year);
+                                   {species: requestBody.species,
+                                    day: requestBody.day,
+                                    month: requestBody.month,
+                                    year: requestBody.year});
 
     LL_Respond(200, response).as_is();
 
