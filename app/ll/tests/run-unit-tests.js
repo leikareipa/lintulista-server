@@ -15,9 +15,10 @@ async function run_unit_tests()
 {
     const tests = {
         "UintStringer": require("./unit/uint-stringer.js").test,
-        "ListKey": require("./unit/list-key.js").test,
         "Observation": require("./unit/observation.js").test,
         "Token": require("./unit/token.js").test,
+        "ListKey": require("./unit/list-key.js").test,
+        "Database": require("./unit/database.js").test,
     };
 
     let numTestsFailed = 0;
@@ -29,9 +30,12 @@ async function run_unit_tests()
         let success = false;
         let errorMessage = "";
 
+        process.stdout.write(` ....  ${testName}  `);
+
         try
         {
             await tests[testName]();
+
             success = true;
         }
         catch (error)
@@ -48,18 +52,21 @@ async function run_unit_tests()
             }
         }
 
+        process.stdout.clearLine();
+        process.stdout.cursorTo(0);
+
         if (success) {
-            console.log(`\x1b[37m\x1b[42m PASS \x1b[0m ${testName}`);
+            process.stdout.write(`\x1b[37m\x1b[42m PASS \x1b[0m ${testName}\n`);
         }
         else {
-            console.log(`\x1b[37m\x1b[41m FAIL \x1b[0m ${testName}: ${errorMessage}`);
+            process.stdout.write(`\x1b[37m\x1b[41m FAIL \x1b[0m ${testName}: ${errorMessage}\n`);
         }
     }
 
-    const resultString = "Finished: " +
+    const resultString = "Done. " +
                          ((numTestsFailed <= 0)
-                          ? "All passed."
-                          : `${numTestsFailed}/${Object.keys(tests).length} failed.`);
+                          ? "All tests passed."
+                          : `${numTestsFailed}/${Object.keys(tests).length} tests failed.`);
 
     console.log(resultString, "\n");
     return resultString;
