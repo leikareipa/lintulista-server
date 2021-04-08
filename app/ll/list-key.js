@@ -17,5 +17,5 @@ function is_list_key_valid(listKeyCandidate = "")
 {
     return ((typeof listKeyCandidate === "string") &&
             (listKeyCandidate.length === keyLength) &&
-            (listKeyCandidate.match(/[^a-zA-Z]/) === null));
+            (listKeyCandidate.match(/[^a-z]/) === null));
 }

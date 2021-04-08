@@ -28,14 +28,12 @@ async function test_ListKey()
         for (let i = 0; i < Math.min(validKey.length, string.length); i++) {
             validKey[i] = string[i];
         }
-        return validKey.join("");
+        return validKey.join("").toLowerCase();
     }
     
     // Accept valid keys.
     LLTest_ExpectTrue(()=>LL_IsListKeyValid(make_valid_key("aaaaaaaaa")) === true);
-    LLTest_ExpectTrue(()=>LL_IsListKeyValid(make_valid_key("AAAAAAAAA")) === true);
-    LLTest_ExpectTrue(()=>LL_IsListKeyValid(make_valid_key("ABCDEFGHI")) === true);
-    LLTest_ExpectTrue(()=>LL_IsListKeyValid(make_valid_key("HOeGFqwLL")) === true);
+    LLTest_ExpectTrue(()=>LL_IsListKeyValid(make_valid_key("abcdefghi")) === true);
     LLTest_ExpectTrue(()=>LL_IsListKeyValid(make_valid_key(String("aaaaaaaaa"))) === true);
 
     // Reject keys that aren't strings.
@@ -54,7 +52,7 @@ async function test_ListKey()
     {
         const chr = String.fromCharCode(i);
         const key = chr.repeat(keyLength);
-        const shouldBeValid = !key.match(/[^a-zA-Z]/);
+        const shouldBeValid = !key.match(/[^a-z]/);
         LLTest_ExpectTrue(()=>LL_IsListKeyValid(key) === shouldBeValid);
     }
 
