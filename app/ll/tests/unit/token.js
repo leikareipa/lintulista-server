@@ -14,7 +14,6 @@ const {LLTest_ExpectThrow,
 // The unit to be tested.
 const {LL_GenerateToken,
        LL_IsTokenWellFormed} = require("../../token.js");
-const token = require("../../token.js");
 
 module.exports = {
     test: test_Token,
