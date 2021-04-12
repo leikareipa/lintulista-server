@@ -21,18 +21,14 @@ module.exports = {
 // and not directly by external code.
 function create_postgresql_executor()
 {
-    LL_Assert((("LL_PSQL_USER" in process.env) &&
-               ("LL_PSQL_HOST" in process.env) &&
-               ("LL_PSQL_DATABASE" in process.env) &&
-               ("LL_PSQL_PASSWORD" in process.env)),
+    LL_Assert(("DATABASE_URL" in process.env),
               "Missing one or more required environment variable(s).");
 
     const client = new PSQLClient({
-        user: process.env.LL_PSQL_USER,
-        host: process.env.LL_PSQL_HOST,
-        database: process.env.LL_PSQL_DATABASE,
-        password: process.env.LL_PSQL_PASSWORD,
-        port: 5432,
+        connectionString: process.env.DATABASE_URL,
+        ssl: {
+            rejectUnauthorized: false
+        }
     });
     
     client.connect();
