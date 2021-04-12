@@ -57,7 +57,7 @@ function populate_http_response(htmlResponseCode = 200,
         {
             response.setHeader("Content-Type", "application/json");
             response.end(JSON.stringify({
-                ...jsonObject,
+                data: {...jsonObject},
                 valid: (htmlResponseCode < 400),
             }));
 

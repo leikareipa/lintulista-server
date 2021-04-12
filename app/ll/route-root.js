@@ -117,7 +117,7 @@ async function process_get({response, database})
     const observations = await database.get_observations();
 
     LL_Respond(200, response).json({
-        data: observations,
+        observations,
     });
 
     return;
