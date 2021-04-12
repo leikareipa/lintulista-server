@@ -1,0 +1,29 @@
+{
+  "name": "lintulista-server",
+  "version": "0.0.0",
+  "description": "",
+  "main": "app/run.js",
+  "dependencies": {
+    "bcrypt": "^5.0.1",
+    "dotenv": "^8.2.0",
+    "pg": "^8.5.1"
+  },
+  "engines": {
+    "node": "10.x"
+  },
+  "devDependencies": {},
+  "scripts": {
+    "start": "cd app && node run.js",
+    "test": "echo \"Error: no test specified\" && exit 1"
+  },
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/leikareipa/lintulista-server.git"
+  },
+  "author": "Tarpeeksi Hyvae Soft",
+  "license": "GPL-3.0-or-later",
+  "bugs": {
+    "url": "https://github.com/leikareipa/lintulista-server/issues"
+  },
+  "homepage": "https://github.com/leikareipa/lintulista-server#readme"
+}
