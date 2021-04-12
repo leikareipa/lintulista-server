@@ -148,5 +148,45 @@ async function test_Database()
         await database.logout(loginDetails.token);
     }
 
+    // Modify an existing observation.
+    {
+        const originalObservation = Object.freeze({
+            species: "Jänkäkurppa",
+            day: 2,
+            month: 4,
+            year: 2020,
+        });
+
+        const loginDetails = await login();
+
+        await dbExecutor.set_column_value("observations", "", listKey);
+        await database.add_observation(loginDetails.token, originalObservation);
+
+        const dbObservations = await database.get_observations();
+        LLTest_ExpectTrue(()=>dbObservations.length === 1);
+        LLTest_ExpectTrue(()=>dbObservations[0].day === originalObservation.day);
+        LLTest_ExpectTrue(()=>dbObservations[0].month === originalObservation.month);
+        LLTest_ExpectTrue(()=>dbObservations[0].year === originalObservation.year);
+
+        {
+            const modifiedObservation = {
+                ...originalObservation,
+                day: (originalObservation.day - 1),
+                month: (originalObservation.month + 5),
+                year: (originalObservation.year - 2),
+            };
+
+            await database.add_observation(loginDetails.token, modifiedObservation);
+
+            const dbObservations = await database.get_observations();
+            LLTest_ExpectTrue(()=>dbObservations.length === 1);
+            LLTest_ExpectTrue(()=>dbObservations[0].day === modifiedObservation.day);
+            LLTest_ExpectTrue(()=>dbObservations[0].month === modifiedObservation.month);
+            LLTest_ExpectTrue(()=>dbObservations[0].year === modifiedObservation.year);
+        }
+
+        await database.logout(loginDetails.token);
+    }
+
     return;
 }

@@ -24,7 +24,7 @@ module.exports = {
 const dbConstants = {
     minUsernameLength: 5,
     maxUsernameLength: 30,
-    minPlaintextPasswordLength: 5,
+    minPlaintextPasswordLength: 10,
     maxPlaintextPasswordLength: 30,
     minPasswordHashLength: 60,
     maxPasswordHashLength: 255,
@@ -80,6 +80,10 @@ function database_list_access(listKey = "")
             const listPasswordHash = await dbExecutor.get_column_value("password_hash", listKey);
             const isCorrectPassword = await bcrypt.compare(plaintextPassword, listPasswordHash);
 
+            // Note: The password hashes are compared whether the username is correct
+            // or not, so as not to have computing time leak info on whether a username
+            // was correct even if the password wasn't.
+
             if ((listUsername === username) &&
                 (isCorrectPassword === true))
             {
@@ -129,8 +133,12 @@ function database_list_access(listKey = "")
             LL_Assert(await validate_token(token),
                       "Attempted to use an invalid token to add an observation.");
 
-            LL_Assert(!(await this.is_species_on_list(species)),
-                      "Attempted to add a duplicate observation.");
+            // If an observation of this species already exists in the list, well overwrite
+            // it with the new observation data (we assume the user wants to e.g. change
+            // the observation date).
+            if (await this.is_species_on_list(species)) {
+                await this.delete_observation(token, species);
+            }
 
             const newObservationString = LL_Observation.encode_to_string({species, day, month, year});
             const observationsString = await dbExecutor.get_column_value("observations", listKey);
