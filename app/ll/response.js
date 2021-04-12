@@ -37,9 +37,6 @@ module.exports = {
 //           otherData: "Hello there",
 //       });
 //
-// WARNING: For LL_Respond.json(), the 'valid' and 'message' object properties
-// are reserved and should not be used.
-//
 // WARNING: Calling LL_Respond(...) alone - without e.g. .json(...) - will
 // leave the response in an unfinished state.
 //
