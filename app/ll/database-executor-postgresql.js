@@ -9,6 +9,7 @@
 
 const {Client: PSQLClient} = require("pg");
 const {LL_Assert} = require("./assert.js");
+const util = require("util")
 
 module.exports = {
     instance: create_postgresql_executor,
@@ -46,7 +47,10 @@ function create_postgresql_executor()
 
             LL_Assert(((response.rows.length == 1) &&
                        response.rows[0].hasOwnProperty(columnName)),
-                      "Malformed database response.");
+                      `Malformed column reponse:
+                        column="${columnName}"
+                        key="${listKey}"
+                        response=${util.inspect(response)}`);
 
             return response.rows[0][columnName];
         },

@@ -28,6 +28,12 @@ const allowedMethods = Object.keys(requestProcessorFunctions).join(", ");
 async function route_root({listKey, requestMethod, requestBody, response})
 {
     const database = LL_Database(listKey);
+
+    if (!(await database.does_list_exist())) {
+        LL_Respond(404, response).as_is();
+        return;
+    }
+
     const processor_fn = (requestProcessorFunctions[requestMethod] || process_default);
     await processor_fn({response, database, requestBody});
 

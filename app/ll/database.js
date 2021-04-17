@@ -8,7 +8,6 @@
 "use strict";
 
 const bcrypt = require("bcrypt");
-const dbExecutor = require("./database-executor-postgresql.js").instance();
 const {LL_Assert} = require("./assert.js");
 const {LL_Observation} = require("./observation.js");
 const {LL_TimestampNow,
@@ -57,7 +56,21 @@ function database_list_access(listKey = "")
     LL_Assert(LL_IsListKeyValid(listKey),
               "Invalid list key for database access.");
 
+    const dbExecutor = require("./database-executor-postgresql.js").instance();
+
     const publicInterface = {
+        // Returns true if the list key with which this interface was created exists
+        // in the database; false otherwise (including on any unrelated errors)
+        does_list_exist: async function()
+        {
+            try {
+                const keyInDb = await dbExecutor.get_column_value("key", listKey);
+                return (keyInDb === listKey);
+            }
+            catch (error) {
+                return false;
+            }
+        },
         // Logs the user out of the list. Throws on error.
         logout: async function(token = "")
         {
