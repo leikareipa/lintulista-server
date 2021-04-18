@@ -30,8 +30,8 @@ async function test_Database()
     const invalidUsername = (validUsername + "s");
     const invalidPassword = (validPassword + "s");
     const numHoursTokenValid = 6;
-    const database = LL_Database(listKey);
-    const dbExecutor = require("../../database-executor-postgresql.js").instance();
+    const database = await LL_Database(listKey);
+    const dbExecutor = await require("../../database-executor-postgresql.js").instance_async();
 
     const validObservation1 = Object.freeze({
         species: "Jänkäkurppa",

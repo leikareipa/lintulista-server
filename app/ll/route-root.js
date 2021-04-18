@@ -27,7 +27,7 @@ const allowedMethods = Object.keys(requestProcessorFunctions).join(", ");
 // Throws on error; caller is expected to catch.
 async function route_root({listKey, requestMethod, requestBody, response})
 {
-    const database = LL_Database(listKey);
+    const database = await LL_Database(listKey);
 
     if (!(await database.does_list_exist())) {
         LL_Respond(404, response).as_is();

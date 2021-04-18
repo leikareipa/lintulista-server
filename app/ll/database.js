@@ -17,7 +17,7 @@ const {LL_GenerateToken,
 const {LL_IsListKeyValid} = require("./list-key.js");
 
 module.exports = {
-    LL_Database: database_list_access,
+    LL_Database: list_database_accessor,
 };
 
 const dbConstants = {
@@ -43,20 +43,20 @@ const dbConstants = {
 //
 // SAMPLE USAGE:
 //
-//   1. Connect to a list in the database.
+//   1. Connect to a list in the database. This will throw on error.
 //
-//       const database = LL_Database("list-key");
+//       const listDatabase = await LL_Database("list-key");
 //
-//   2. Get all observations in the list.
+//   2. Get all observations in the list. This will throw on error.
 //
-//       const observations = await database.get_observations();
+//       const observations = await listDatabase.get_observations();
 // 
-function database_list_access(listKey = "")
+async function list_database_accessor(listKey = "")
 {
     LL_Assert(LL_IsListKeyValid(listKey),
               "Invalid list key for database access.");
 
-    const dbExecutor = require("./database-executor-postgresql.js").instance();
+    const dbExecutor = await require("./database-executor-postgresql.js").instance_async();
 
     const publicInterface = {
         // Returns true if the list key with which this interface was created exists

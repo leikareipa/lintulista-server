@@ -16,9 +16,9 @@ module.exports = {
 };
 
 // Throws on error; caller is expected to catch.
-async function route_test({listKey, requestMethod, requestBody, response})
+async function route_test({listKey, requestBody, response})
 {
-    const database = LL_Database(listKey);
+    const database = await LL_Database(listKey);
 
     if ((process.env.LL_HOST || null) === "localhost")
     {
@@ -32,7 +32,7 @@ async function route_test({listKey, requestMethod, requestBody, response})
     return;
 }
 
-async function test({response, database, requestBody})
+async function test({response})
 {
     const results = {
         unit: await require("./tests/run-unit-tests.js")(),

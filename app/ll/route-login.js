@@ -27,7 +27,7 @@ const allowedMethods = Object.keys(requestProcessorFunctions).join(", ");
 // Throws on error; caller is expected to catch.
 async function route_login({listKey, requestMethod, requestBody, response})
 {
-    const database = LL_Database(listKey);
+    const database = await LL_Database(listKey);
     const processor_fn = (requestProcessorFunctions[requestMethod] || process_default);
     await processor_fn({response, database, requestBody});
 
