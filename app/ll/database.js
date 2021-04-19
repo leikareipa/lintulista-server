@@ -8,6 +8,7 @@
 "use strict";
 
 const bcrypt = require("bcrypt");
+const {LL_DBExecutor} = require("./database-executor-postgresql.js");
 const {LL_Assert} = require("./assert.js");
 const {LL_Observation} = require("./observation.js");
 const {LL_TimestampNow,
@@ -45,18 +46,16 @@ const dbConstants = {
 //
 //   1. Connect to a list in the database. This will throw on error.
 //
-//       const listDatabase = await LL_Database("list-key");
+//       const listDatabase = LL_Database("list-key");
 //
 //   2. Get all observations in the list. This will throw on error.
 //
 //       const observations = await listDatabase.get_observations();
 // 
-async function list_database_accessor(listKey = "")
+function list_database_accessor(listKey = "")
 {
     LL_Assert(LL_IsListKeyValid(listKey),
               "Invalid list key for database access.");
-
-    const dbExecutor = await require("./database-executor-postgresql.js").instance_async();
 
     const publicInterface = {
         // Returns true if the list key with which this interface was created exists
@@ -64,7 +63,7 @@ async function list_database_accessor(listKey = "")
         does_list_exist: async function()
         {
             try {
-                const keyInDb = await dbExecutor.get_column_value("key", listKey);
+                const keyInDb = await LL_DBExecutor.get_column_value("key", listKey);
                 return (keyInDb === listKey);
             }
             catch (error) {
@@ -89,8 +88,8 @@ async function list_database_accessor(listKey = "")
                       is_valid_plaintext_password_string(plaintextPassword),
                       "Invalid login credentials.");
 
-            const listUsername = await dbExecutor.get_column_value("username", listKey);
-            const listPasswordHash = await dbExecutor.get_column_value("password_hash", listKey);
+            const listUsername = await LL_DBExecutor.get_column_value("username", listKey);
+            const listPasswordHash = await LL_DBExecutor.get_column_value("password_hash", listKey);
             const isCorrectPassword = await bcrypt.compare(plaintextPassword, listPasswordHash);
 
             // Note: The password hashes are compared whether the username is correct
@@ -103,8 +102,8 @@ async function list_database_accessor(listKey = "")
                 const token = LL_GenerateToken();
                 const until = (LL_TimestampNow() + (dbConstants.numHoursTokenValid * 60 * 60));
 
-                await dbExecutor.set_column_value("token", token, listKey);
-                await dbExecutor.set_column_value("token_valid_until", until, listKey);
+                await LL_DBExecutor.set_column_value("token", token, listKey);
+                await LL_DBExecutor.set_column_value("token_valid_until", until, listKey);
                 
                 return {token, until};
             }
@@ -131,7 +130,7 @@ async function list_database_accessor(listKey = "")
         // array containing the observations. Throws on failure.
         get_observations: async function()
         {
-            const observationsString = await dbExecutor.get_column_value("observations", listKey);
+            const observationsString = await LL_DBExecutor.get_column_value("observations", listKey);
             const observations = LL_Observation.decode_from_string(observationsString);
             return observations;
         },
@@ -154,10 +153,10 @@ async function list_database_accessor(listKey = "")
             }
 
             const newObservationString = LL_Observation.encode_to_string({species, day, month, year});
-            const observationsString = await dbExecutor.get_column_value("observations", listKey);
+            const observationsString = await LL_DBExecutor.get_column_value("observations", listKey);
             const concatenated = (observationsString + newObservationString);
 
-            await dbExecutor.set_column_value("observations", concatenated, listKey);
+            await LL_DBExecutor.set_column_value("observations", concatenated, listKey);
 
             return;
         },
@@ -178,10 +177,10 @@ async function list_database_accessor(listKey = "")
                       "Attempted to use an invalid token to delete an observation.");
 
             const targetObservationString = LL_Observation.encode_to_string(targetObservation);
-            const observationsString = await dbExecutor.get_column_value("observations", listKey);
+            const observationsString = await LL_DBExecutor.get_column_value("observations", listKey);
             const removed = observationsString.replace(targetObservationString, "");
 
-            await dbExecutor.set_column_value("observations", removed, listKey);
+            await LL_DBExecutor.set_column_value("observations", removed, listKey);
 
             return;
         },
@@ -197,8 +196,8 @@ async function list_database_accessor(listKey = "")
 
     async function reset_list_token()
     {
-        await dbExecutor.set_column_value("token", "", listKey);
-        await dbExecutor.set_column_value("token_valid_until", 0, listKey);
+        await LL_DBExecutor.set_column_value("token", "", listKey);
+        await LL_DBExecutor.set_column_value("token_valid_until", 0, listKey);
         return;
     }
     
@@ -209,7 +208,7 @@ async function list_database_accessor(listKey = "")
     {
         // Verify that the token is valid for this list.
         {
-            const listToken = await dbExecutor.get_column_value("token", listKey);
+            const listToken = await LL_DBExecutor.get_column_value("token", listKey);
 
             if (!LL_IsTokenWellFormed(proposedToken) ||
                 !LL_IsTokenWellFormed(listToken))
@@ -226,7 +225,7 @@ async function list_database_accessor(listKey = "")
         // Validate token timeout. At this point, we've found the proposed token to
         // be valid; now we just need to be sure that it hasn't timed out.
         {
-            const listTokenValidUntil = Number(await dbExecutor.get_column_value("token_valid_until", listKey));
+            const listTokenValidUntil = Number(await LL_DBExecutor.get_column_value("token_valid_until", listKey));
 
             LL_Assert(LL_IsTimestampValid(listTokenValidUntil),
                       "Detected a malformed timestamp in the database.");

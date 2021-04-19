@@ -14,6 +14,7 @@ const {LLTest_ExpectThrow,
        LLTest_ExpectTrue} = require("../test-assert.js");
 const {LL_IsTokenWellFormed} = require("../../token.js");
 const {LL_IsTimestampValid, LL_TimestampNow} = require("../../timestamp.js");
+const {LL_DBExecutor} = require("../../database-executor-postgresql.js");
 
 // The unit to be tested.
 const {LL_Database} = require("../../database.js");
@@ -30,8 +31,7 @@ async function test_Database()
     const invalidUsername = (validUsername + "s");
     const invalidPassword = (validPassword + "s");
     const numHoursTokenValid = 6;
-    const database = await LL_Database(listKey);
-    const dbExecutor = await require("../../database-executor-postgresql.js").instance_async();
+    const database = LL_Database(listKey);
 
     const validObservation1 = Object.freeze({
         species: "Jänkäkurppa",
@@ -74,11 +74,11 @@ async function test_Database()
     {
         const loginDetails = await login();
 
-        const tokenInDb = await dbExecutor.get_column_value("token", listKey);
+        const tokenInDb = await LL_DBExecutor.get_column_value("token", listKey);
         LLTest_ExpectTrue(()=>LL_IsTokenWellFormed(tokenInDb) === true);
         LLTest_ExpectTrue(()=>(tokenInDb === loginDetails.token));
 
-        const tokenTimestampInDb = Number(await dbExecutor.get_column_value("token_valid_until", listKey));
+        const tokenTimestampInDb = Number(await LL_DBExecutor.get_column_value("token_valid_until", listKey));
         LLTest_ExpectTrue(()=>LL_IsTimestampValid(tokenTimestampInDb) === true);
         LLTest_ExpectTrue(()=>(tokenTimestampInDb === loginDetails.until));
         LLTest_ExpectTrue(()=>(tokenTimestampInDb > (LL_TimestampNow() + numHoursTokenValid * 60 * 60 - 60)));
@@ -107,7 +107,7 @@ async function test_Database()
         await LLTest_ExpectThrowAsync(async()=>await database.add_observation(invalidObservationSpecies));
 
         // Add with a valid token.
-        await dbExecutor.set_column_value("observations", "", listKey);
+        await LL_DBExecutor.set_column_value("observations", "", listKey);
         await database.add_observation(loginDetails.token, validObservation1);
         await database.add_observation(loginDetails.token, validObservation2);
 
@@ -131,7 +131,7 @@ async function test_Database()
     {
         const loginDetails = await login();
 
-        await dbExecutor.set_column_value("observations", "", listKey);
+        await LL_DBExecutor.set_column_value("observations", "", listKey);
         await database.add_observation(loginDetails.token, validObservation1);
 
         // Reject deleting an observation that doesn't exist in the list.
@@ -159,7 +159,7 @@ async function test_Database()
 
         const loginDetails = await login();
 
-        await dbExecutor.set_column_value("observations", "", listKey);
+        await LL_DBExecutor.set_column_value("observations", "", listKey);
         await database.add_observation(loginDetails.token, originalObservation);
 
         const dbObservations = await database.get_observations();

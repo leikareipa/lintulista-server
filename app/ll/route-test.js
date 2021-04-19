@@ -18,7 +18,7 @@ module.exports = {
 // Throws on error; caller is expected to catch.
 async function route_test({listKey, requestBody, response})
 {
-    const database = await LL_Database(listKey);
+    const database = LL_Database(listKey);
 
     if ((process.env.LL_HOST || null) === "localhost")
     {
