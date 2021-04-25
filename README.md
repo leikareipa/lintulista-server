@@ -272,9 +272,10 @@ Sample response (failure):
 
 Request format: GET [host]/test?list=[list_key]
 
-- Available only if the environment variable LL_HOST is "localhost"
+- Available only if the environment variable `LL_HOST` is "localhost"
 - Requires that Node.js has access to `process.stdout` (e.g. that the server is running in a terminal)
-- The list key must be a valid list key string but doesn't need to be of an existant list (e.g. "aaaaaaaaa" will do)
+- Requires [the database table](#database) to contain a list with the following column values: key="testeihin", username="tester", password_hash=[hash of "blaablaablaa"]
+- The `list` URL parameter must be a valid list key string but doesn't need to be of an existant list (e.g. "aaaaaaaaa" will do)
 
 Sample request:
 ```shell
